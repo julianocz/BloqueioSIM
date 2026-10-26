@@ -31,7 +31,14 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle b) {
+        setTheme(android.R.style.Theme_DeviceDefault);
         super.onCreate(b);
+        // Guarda qualquer falha para mostrar na próxima abertura
+        final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            Prefs.get(this).edit().putString("ultimo_erro", android.util.Log.getStackTraceString(e)).commit();
+            if (old != null) old.uncaughtException(t, e);
+        });
         ScrollView sv = new ScrollView(this);
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -48,6 +55,22 @@ public class MainActivity extends Activity {
     }
 
     private void build() {
+        try {
+            buildUi();
+        } catch (Throwable e) {
+            root.removeAllViews();
+            title("Erro");
+            text("Tire um print desta tela e envie:\n\n" + android.util.Log.getStackTraceString(e));
+        }
+        String last = Prefs.get(this).getString("ultimo_erro", null);
+        if (last != null) {
+            header("Erro anterior (envie um print)");
+            text(last);
+            button("Apagar erro", v -> { Prefs.get(this).edit().remove("ultimo_erro").apply(); build(); });
+        }
+    }
+
+    private void buildUi() {
         root.removeAllViews();
         SharedPreferences p = Prefs.get(this);
 
@@ -116,14 +139,22 @@ public class MainActivity extends Activity {
     }
 
     private boolean hasRole() {
-        RoleManager rm = getSystemService(RoleManager.class);
-        return rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
+        try {
+            RoleManager rm = getSystemService(RoleManager.class);
+            return rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
+        } catch (Throwable e) { return false; }
     }
 
     private void requestRole() {
         RoleManager rm = getSystemService(RoleManager.class);
-        if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-            startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), REQ_ROLE);
+        try {
+            if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+                startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), REQ_ROLE);
+            } else {
+                android.widget.Toast.makeText(this, "Este aparelho não oferece filtro de chamadas", android.widget.Toast.LENGTH_LONG).show();
+            }
+        } catch (Throwable e) {
+            android.widget.Toast.makeText(this, "Erro: " + e, android.widget.Toast.LENGTH_LONG).show();
         }
     }
 
@@ -132,15 +163,18 @@ public class MainActivity extends Activity {
         TelecomManager tm = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
         try {
             return tm.getCallCapablePhoneAccounts();
-        } catch (SecurityException e) {
+        } catch (Throwable e) {
             return java.util.Collections.emptyList();
         }
     }
 
     private String label(PhoneAccountHandle h) {
-        TelecomManager tm = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
-        PhoneAccount a = tm.getPhoneAccount(h);
-        return a != null && a.getLabel() != null ? a.getLabel().toString() : "Chip";
+        try {
+            TelecomManager tm = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
+            PhoneAccount a = tm.getPhoneAccount(h);
+            if (a != null && a.getLabel() != null) return a.getLabel().toString();
+        } catch (Throwable ignored) {}
+        return "Chip";
     }
 
     @Override
