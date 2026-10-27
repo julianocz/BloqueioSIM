@@ -14,6 +14,8 @@ import android.telecom.TelecomManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
@@ -118,6 +120,7 @@ public class MainActivity extends Activity {
                 cb.setChecked(chosen.contains(Prefs.key(h)));
                 cb.setOnCheckedChangeListener((x, on) -> Prefs.setSimBlocked(this, h, on));
                 root.addView(cb);
+                exceptionsBox(h, n - 1);
             }
         }
 
@@ -129,6 +132,51 @@ public class MainActivity extends Activity {
             p.edit().remove(Prefs.KEY_LOG).apply();
             build();
         });
+    }
+
+    /** Área de exceções (DDDs e números liberados) de um chip. */
+    private void exceptionsBox(PhoneAccountHandle h, int simNumber) {
+        String k = Prefs.key(h);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(32), 0, 0, dp(12));
+
+        TextView t = new TextView(this);
+        t.setText("Exceções do SIM " + simNumber + " (sempre podem ligar):");
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        box.addView(t);
+
+        TextView l1 = new TextView(this);
+        l1.setText("DDDs liberados (separe por vírgula). Ex: 31, 41");
+        box.addView(l1);
+        EditText ddd = new EditText(this);
+        ddd.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+        ddd.setHint("31, 41");
+        ddd.setText(Prefs.get(this).getString(Prefs.KEY_DDD + k, ""));
+        box.addView(ddd);
+
+        TextView l2 = new TextView(this);
+        l2.setText("Números liberados (um por linha, com DDD)");
+        box.addView(l2);
+        EditText nums = new EditText(this);
+        nums.setInputType(android.text.InputType.TYPE_CLASS_PHONE | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        nums.setSingleLine(false);
+        nums.setMinLines(2);
+        nums.setHint("31 99999-8888");
+        nums.setText(Prefs.get(this).getString(Prefs.KEY_NUMS + k, ""));
+        box.addView(nums);
+
+        Button save = new Button(this);
+        save.setText("Salvar exceções do SIM " + simNumber);
+        save.setOnClickListener(v -> {
+            Prefs.get(this).edit()
+                    .putString(Prefs.KEY_DDD + k, ddd.getText().toString().trim())
+                    .putString(Prefs.KEY_NUMS + k, nums.getText().toString().trim())
+                    .apply();
+            Toast.makeText(this, "Exceções salvas", Toast.LENGTH_SHORT).show();
+        });
+        box.addView(save);
+        root.addView(box);
     }
 
     // ---------- helpers ----------

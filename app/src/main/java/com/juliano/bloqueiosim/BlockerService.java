@@ -41,7 +41,7 @@ public class BlockerService extends CallScreeningService {
                         block = p.getBoolean(Prefs.KEY_BLOCK_HIDDEN, true);
                         number = "Número oculto";
                     } else {
-                        block = !isContact(number);
+                        block = !Prefs.isException(this, acc, number) && !isContact(number);
                     }
                 }
             }
