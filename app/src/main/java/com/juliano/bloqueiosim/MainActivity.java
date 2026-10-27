@@ -50,18 +50,22 @@ public class MainActivity extends Activity {
     }
 
     private void build() {
+        // Se o app fechou antes, mostra SÓ o erro (nada mais é carregado)
+        String last = Prefs.get(this).getString("ultimo_erro", null);
+        if (last != null) {
+            root.removeAllViews();
+            title("O app fechou na última vez");
+            text("Versão " + BuildConfig.VERSION_NAME + ". Tire um print desta tela e envie:");
+            button("Apagar erro e continuar", v -> { Prefs.get(this).edit().remove("ultimo_erro").commit(); build(); });
+            text(last);
+            return;
+        }
         try {
             buildUi();
         } catch (Throwable e) {
             root.removeAllViews();
             title("Erro");
             text("Tire um print desta tela e envie:\n\n" + android.util.Log.getStackTraceString(e));
-        }
-        String last = Prefs.get(this).getString("ultimo_erro", null);
-        if (last != null) {
-            header("Erro anterior (envie um print)");
-            text(last);
-            button("Apagar erro", v -> { Prefs.get(this).edit().remove("ultimo_erro").apply(); build(); });
         }
     }
 
@@ -143,7 +147,7 @@ public class MainActivity extends Activity {
         l1.setText("DDDs liberados (separe por vírgula). Ex: 31, 41");
         box.addView(l1);
         EditText ddd = new EditText(this);
-        ddd.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+        ddd.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
         ddd.setHint("31, 41");
         ddd.setText(Prefs.get(this).getString(Prefs.KEY_DDD + k, ""));
         box.addView(ddd);
@@ -152,7 +156,7 @@ public class MainActivity extends Activity {
         l2.setText("Números liberados (um por linha, com DDD)");
         box.addView(l2);
         EditText nums = new EditText(this);
-        nums.setInputType(android.text.InputType.TYPE_CLASS_PHONE | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        nums.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         nums.setSingleLine(false);
         nums.setMinLines(2);
         nums.setHint("31 99999-8888");
@@ -219,10 +223,10 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int code, String[] p, int[] r) { build(); }
+    public void onRequestPermissionsResult(int code, String[] p, int[] r) { root.post(this::build); }
 
     @Override
-    protected void onActivityResult(int req, int res, android.content.Intent d) { build(); }
+    protected void onActivityResult(int req, int res, android.content.Intent d) { root.post(this::build); }
 
     private void title(String s) {
         TextView t = new TextView(this);
