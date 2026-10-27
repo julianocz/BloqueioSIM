@@ -33,14 +33,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle b) {
-        setTheme(android.R.style.Theme_DeviceDefault);
         super.onCreate(b);
-        // Guarda qualquer falha para mostrar na próxima abertura
-        final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            Prefs.get(this).edit().putString("ultimo_erro", android.util.Log.getStackTraceString(e)).commit();
-            if (old != null) old.uncaughtException(t, e);
-        });
         ScrollView sv = new ScrollView(this);
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -76,7 +69,7 @@ public class MainActivity extends Activity {
         root.removeAllViews();
         SharedPreferences p = Prefs.get(this);
 
-        title("Bloqueio por SIM");
+        title("Bloqueio por SIM  v" + BuildConfig.VERSION_NAME);
         text("Bloqueia ligações de números que NÃO estão nos seus contatos, só no(s) chip(s) que você escolher.");
 
         // 1. Permissões
