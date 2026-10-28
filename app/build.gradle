@@ -1,4 +1,9 @@
 plugins { id 'com.android.application' }
+
+// Número da versão = número da compilação no GitHub (Actions)
+def numero = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+def chave = file("chave.jks")
+
 android {
     namespace 'com.juliano.bloqueiosim'
     compileSdk 34
@@ -6,10 +11,21 @@ android {
         applicationId 'com.juliano.bloqueiosim'
         minSdk 29
         targetSdk 34
-        versionCode 4
-        versionName '1.4'
+        versionCode numero
+        versionName "2." + numero
     }
-    buildTypes { release { minifyEnabled false } }
+    signingConfigs {
+        fixa {
+            storeFile chave
+            storePassword 'bloqueiosim'
+            keyAlias 'bloqueiosim'
+            keyPassword 'bloqueiosim'
+        }
+    }
+    buildTypes {
+        debug { if (chave.exists()) signingConfig signingConfigs.fixa }
+        release { minifyEnabled false }
+    }
     buildFeatures { buildConfig true }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

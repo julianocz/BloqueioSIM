@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
         root.setPadding(pad, pad, pad, pad);
         sv.addView(root);
         setContentView(sv);
+        if (b == null) Updater.check(this, true); // procura versão nova ao abrir
     }
 
     @Override
@@ -120,6 +121,11 @@ public class MainActivity extends Activity {
                 exceptionsBox(h, n - 1);
             }
         }
+
+        // Atualização
+        header("Atualização");
+        text("Versão instalada: " + BuildConfig.VERSION_NAME);
+        button("Verificar atualização", v -> Updater.check(this, false));
 
         // 4. Histórico
         header("Últimas chamadas bloqueadas");
