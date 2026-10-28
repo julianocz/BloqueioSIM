@@ -1,5 +1,7 @@
 name: Gerar APK
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -9,8 +11,19 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.3' }
+      - name: Chave de assinatura
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error::Falta o segredo KEYSTORE_B64 em Settings > Secrets"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > app/chave.jks
       - run: gradle assembleDebug
+      - run: cp app/build/outputs/apk/debug/app-debug.apk BloqueioSIM.apk
       - uses: actions/upload-artifact@v4
         with:
           name: BloqueioSIM-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: BloqueioSIM.apk
+      - name: Publicar versão (Release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ github.run_number }}" BloqueioSIM.apk --title "Versão 2.${{ github.run_number }}" --notes "Gerada automaticamente"
